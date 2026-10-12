@@ -172,8 +172,12 @@ async function handle(req, res) {
   if (method === 'GET' && (p === '/' || p === '/overlap.html')) return send(res, 200, fs.readFileSync(PAGE), 'text/html; charset=utf-8');
   if (method === 'GET' && p === '/api/ping') {
     // durable is false when answers would be lost on the next restart (Render without a database or disk);
-    // unsaved counts events still waiting to be written, so it stays above 0 if writes keep failing
-    return send(res, 200, { ok: true, app: 'overlap', store: pool ? 'database' : 'file', durable: Boolean(pool) || !ON_RENDER || Boolean(process.env.DATA_DIR), unsaved: unsaved.size });
+    // unsaved counts events still waiting to be written, so it stays above 0 if writes keep failing;
+    // up is seconds since this process started, keepAwake how many self-requests were sent and answered
+    return send(res, 200, {
+      ok: true, app: 'overlap', store: pool ? 'database' : 'file', durable: Boolean(pool) || !ON_RENDER || Boolean(process.env.DATA_DIR),
+      unsaved: unsaved.size, up: Math.round(process.uptime()), keepAwake: KEEP_AWAKE_URL ? awake : false
+    });
   }
 
   if (method === 'POST' && p === '/api/events') {
@@ -223,6 +227,22 @@ server.on('error', (e) => {
   console.error(e.code === 'EADDRINUSE' ? 'Port ' + PORT + ' is already in use. Close the other program or run with a different PORT.' : e.message);
   process.exit(1);
 });
+// Render's free plan stops a service after 15 minutes without a visit, and the next visitor then waits
+// about a minute for it to boot. Requesting our own public address every 10 minutes counts as a visit.
+// Render sets RENDER_EXTERNAL_URL itself; KEEP_AWAKE_URL does the same on other hosts.
+const KEEP_AWAKE_URL = (process.env.KEEP_AWAKE_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/+$/, '');
+const KEEP_AWAKE_MS = (Number(process.env.KEEP_AWAKE_MINUTES) || 10) * 60000;
+const awake = { sent: 0, ok: 0 };
+function keepAwake() {
+  if (!KEEP_AWAKE_URL || typeof fetch !== 'function') return;
+  setInterval(() => {
+    awake.sent++;
+    fetch(KEEP_AWAKE_URL + '/api/ping', { signal: AbortSignal.timeout(20000) })
+      .then((r) => r.arrayBuffer().then(() => { if (r.ok) awake.ok++; }))
+      .catch((e) => console.error('Keep-awake request failed: ' + e.message));
+  }, KEEP_AWAKE_MS).unref();
+}
+
 async function start() {
   if (process.env.DATABASE_URL) {
     try { pool = await openDatabase(process.env.DATABASE_URL); }
@@ -233,6 +253,8 @@ async function start() {
     console.log('Overlap is running on port ' + PORT + (HOST === '127.0.0.1' ? ', this laptop only: http://localhost:' + PORT : ''));
     console.log(pool ? 'Answers are saved in the database.'
       : 'Answers are saved in ' + DATA + (ON_RENDER && !process.env.DATA_DIR ? ' (temporary: this host wipes it on restart)' : ''));
+    if (KEEP_AWAKE_URL) console.log('Keeping awake by requesting ' + KEEP_AWAKE_URL + ' every ' + KEEP_AWAKE_MS / 60000 + ' minutes.');
+    keepAwake();
   });
 }
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { flush().then(() => process.exit(0)); });
