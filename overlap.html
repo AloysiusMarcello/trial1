@@ -172,6 +172,17 @@ button.cell:hover,button.tile:hover,.hot{outline:2px solid var(--ink);outline-of
 .tile .t-sub{font-size:12px}
 .tile.on{background:var(--lav)}
 
+/* who-is-free card that follows the hovered slot or date in the group grid */
+.pop{position:fixed;z-index:20;width:220px;padding:14px 16px;background:#fff;color:var(--ink);border-radius:16px;box-shadow:0 12px 32px rgba(11,11,11,.22),0 0 0 1px rgba(11,11,11,.06);pointer-events:none;display:flex;flex-direction:column;gap:8px}
+.pop-title{font-size:15px;font-weight:600}
+.pop-when,.pop-more{font-size:12px;color:var(--ink-3)}
+.pop-label{font-size:12px;font-weight:600;color:var(--ink-2);margin-top:2px}
+.pop-row{display:flex;align-items:center;gap:8px;min-width:0;font-size:14px}
+.pop-row .avatar{width:22px;height:22px;font-size:11px}
+.pop-row .pop-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pop-row.out{color:var(--ink-3)}
+.pop-row.out .avatar{opacity:.45}
+
 #toast{position:fixed;left:50%;bottom:24px;max-width:calc(100vw - 32px);transform:translate(-50%,16px);background:#fff;color:var(--ink);padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -192,6 +203,7 @@ button.cell:hover,button.tile:hover,.hot{outline:2px solid var(--ink);outline-of
 <body>
 <div id="app"></div>
 <div id="toast" role="status" aria-live="polite"></div>
+<div id="pop" class="pop" aria-hidden="true" hidden></div>
 <noscript><p style="padding:24px">Overlap needs JavaScript to run.</p></noscript>
 <script>
 (function () {
@@ -725,7 +737,7 @@ function render() {
   try { if (fid && typeof act.selectionStart === 'number') caret = [act.selectionStart, act.selectionEnd]; } catch (e) {}
   app.innerHTML = '<aside class="side">' + brand() + (ev ? sideEvent(ev) : sideNew()) + sideEvents() + '</aside><main class="main">' + (ev ? mainEvent(ev) : mainNew()) + '</main>';
   document.title = (ev ? ev.name + ' · ' : '') + 'Overlap';
-  if (ev) paint(); else updateDraft();
+  if (ev) paint(); else { updateDraft(); document.getElementById('pop').hidden = true; }
   if (fid) {
     var el = app.querySelector('[data-fid="' + fid + '"]');
     if (el) { el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
@@ -766,12 +778,17 @@ function paint() {
 function paintHover() {
   var ev = cur();
   if (!ev) return;
-  var n = ev.people.length, h = S.hover, out = $('#readout');
+  var n = ev.people.length, h = S.hover, out = $('#readout'), free = [], busy = [];
+  if (h) ev.people.forEach(function (p, i) { (p.slots[h.key] ? free : busy).push({ name: p.name, color: AVATAR[i % AVATAR.length] }); });
   if (out) {
-    var c = 0;
-    if (h) ev.people.forEach(function (p) { if (p.slots[h.key]) c++; });
-    out.textContent = h ? c + '/' + n + ' available · ' + h.label : 'Hover or tap a slot to see who is available.';
+    out.textContent = h ? free.length + '/' + n + ' available · ' + h.label : 'Hover or tap a ' + (ev.mode === 'days' ? 'date' : 'slot') + ' to see who is available.';
     out.classList.toggle('live', !!h);
+    if (h && n) { // the floating card is visual only, so screen readers get the names here
+      var sr = document.createElement('span'), names = function (l) { return l.map(function (p) { return p.name; }).join(', ') || 'no one'; };
+      sr.className = 'sr';
+      sr.textContent = ' Available: ' + names(free) + '. Unavailable: ' + names(busy) + '.';
+      out.appendChild(sr);
+    }
   }
   each('[data-p]', function (li) {
     var p = ev.people[+li.dataset.p];
@@ -781,7 +798,36 @@ function paintHover() {
     li.querySelector('.p-status').textContent = free === null ? c + ' ' + unit(ev, c) : free ? 'Available' : 'Unavailable';
   });
   each('.hot', function (el) { el.classList.remove('hot'); });
-  if (h) { var el = $('[data-g="group"][data-k="' + h.key + '"]'); if (el) el.classList.add('hot'); }
+  var hot = h ? $('[data-g="group"][data-k="' + h.key + '"]') : null;
+  if (hot) hot.classList.add('hot');
+  showPop(hot ? { n: n, label: h.label, free: free, busy: busy } : null, hot);
+}
+function showPop(info, el) { // names of who is and is not free, beside the hovered slot or date
+  var pop = document.getElementById('pop');
+  if (!info) { pop.hidden = true; return; }
+  var rows = function (list, cls) {
+    return list.slice(0, 10).map(function (p) {
+      return '<div class="pop-row' + cls + '"><span class="avatar" style="background:' + p.color + '">' + esc(p.name.charAt(0).toUpperCase()) + '</span><span class="pop-name">' + esc(p.name) + '</span></div>';
+    }).join('') + (list.length > 10 ? '<div class="pop-more">and ' + (list.length - 10) + ' more</div>' : '');
+  };
+  pop.innerHTML = '<div><div class="pop-title">' + info.free.length + '/' + info.n + ' available</div><div class="pop-when">' + esc(info.label) + '</div></div>' +
+    (info.n ? '' : '<div class="pop-more">No one has responded yet.</div>') +
+    (info.free.length ? '<div class="pop-label">Available</div>' + rows(info.free, '') : '') +
+    (info.busy.length ? '<div class="pop-label">Unavailable</div>' + rows(info.busy, ' out') : '');
+  pop.hidden = false;
+  placePop(el);
+}
+function placePop(el) { // to the right of the cell, else the left, else below it; always inside the window
+  var pop = document.getElementById('pop'), r = el.getBoundingClientRect(), w = pop.offsetWidth, ht = pop.offsetHeight, gap = 10;
+  var left = r.right + gap, top = r.top + r.height / 2 - ht / 2;
+  if (left + w > window.innerWidth - 8) left = r.left - gap - w;
+  if (left < 8) {
+    left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8));
+    top = r.bottom + gap;
+    if (top + ht > window.innerHeight - 8) top = r.top - gap - ht;
+  }
+  pop.style.left = Math.round(left) + 'px';
+  pop.style.top = Math.round(Math.max(8, Math.min(top, window.innerHeight - ht - 8))) + 'px';
 }
 function setHover(cell) {
   var key = cell ? cell.dataset.k : null;
@@ -820,6 +866,7 @@ function applyRoute(h) {
   if (REMOTE && id && /^[a-z0-9]{4,24}$/.test(id)) loadRemote(id); else showRoute(id);
 }
 function showRoute(id) {
+  S.hover = null;
   if (id && S.events.some(function (e) { return e.id === id; })) {
     if (S.curId !== id) { S.curId = id; S.me = null; token = null; S.siErr = ''; S.siName = ''; S.siPw = ''; S.hover = null; }
     S.view = 'event';
@@ -980,6 +1027,9 @@ app.addEventListener('submit', function (e) {
 });
 window.addEventListener('hashchange', route);
 document.addEventListener('visibilitychange', poll);
+['scroll', 'resize'].forEach(function (type) { // keep the who-is-free card next to its cell
+  window.addEventListener(type, function () { var hot = S.hover && $('.hot'); if (hot) placePop(hot); }, true);
+});
 
 if (/^https?:$/.test(location.protocol)) { // served over the web: check whether server.js is behind this page
   api('GET', 'ping').then(function (j) { REMOTE = j.app === 'overlap'; TEMPORARY = REMOTE && j.durable === false; }, function () {}).then(function () { route(); setInterval(poll, 4000); });
