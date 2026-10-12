@@ -171,8 +171,9 @@ async function handle(req, res) {
 
   if (method === 'GET' && (p === '/' || p === '/overlap.html')) return send(res, 200, fs.readFileSync(PAGE), 'text/html; charset=utf-8');
   if (method === 'GET' && p === '/api/ping') {
-    // durable is false when answers would be lost on the next restart (Render without a database or disk)
-    return send(res, 200, { ok: true, app: 'overlap', store: pool ? 'database' : 'file', durable: Boolean(pool) || !ON_RENDER || Boolean(process.env.DATA_DIR) });
+    // durable is false when answers would be lost on the next restart (Render without a database or disk);
+    // unsaved counts events still waiting to be written, so it stays above 0 if writes keep failing
+    return send(res, 200, { ok: true, app: 'overlap', store: pool ? 'database' : 'file', durable: Boolean(pool) || !ON_RENDER || Boolean(process.env.DATA_DIR), unsaved: unsaved.size });
   }
 
   if (method === 'POST' && p === '/api/events') {
