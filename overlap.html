@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Overlap · find a time that works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;600;700&amp;display=swap">
+<style>
+:root{
+  --bg:#050505; --panel:#151515; --raised:#232323; --raised-2:#2E2E2E; --muted:#A3A3A8; --dim:#8A8A90;
+  --lime:#E4F65A; --lav:#B5A6F5; --violet:#5A41D8; --pink:#F9C9F4; --pink-ink:#8F1480;
+  --ink:#0B0B0B; --ink-2:#3F3F48; --ink-3:#5C5C66; --cell:#EFEDF5; --hair:#E4E3EA;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:#fff;font-family:"Red Hat Display","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,p{margin:0}
+h1{font-size:32px;font-weight:600;line-height:1.15;overflow-wrap:anywhere}
+h2{font-size:19px;font-weight:600;overflow-wrap:anywhere}
+button,input,select{font:inherit}
+button{cursor:pointer;border:0;padding:0;background:none;color:inherit}
+:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.side :focus-visible{outline-color:var(--lime)}
+[hidden]{display:none!important}
+
+#app{min-height:100vh;padding:16px;display:flex;flex-wrap:wrap;gap:12px;align-items:stretch}
+.side{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.main{flex:999 1 560px;min-width:0;border-radius:28px;padding:28px;color:var(--ink);display:flex;flex-direction:column;gap:22px;
+  background:radial-gradient(110% 80% at 0% 0%,var(--lime) 0%,transparent 58%),linear-gradient(180deg,#D7E8EA 0%,#CFDCF1 55%,#C4B5F4 100%)}
+
+/* dark sidebar panels */
+.panel{background:var(--panel);border-radius:24px;padding:22px;display:flex;flex-direction:column;gap:16px}
+.sub{font-size:13px;line-height:1.5;color:var(--muted)}
+.row{display:flex;align-items:center;gap:8px}
+.grow{flex:1 1 auto;min-width:0}
+.brand{flex-direction:row;align-items:center;gap:14px;padding:14px}
+.logo{width:52px;height:52px;flex:none;border-radius:16px;background:var(--lav);display:grid;place-items:center}
+.brand-text{flex:1;min-width:0;display:flex;flex-direction:column}
+.brand-text strong{font-size:18px;font-weight:600}
+.brand-text span{font-size:13px;color:var(--muted)}
+.tile-btn{width:52px;height:52px;flex:none;border-radius:16px;background:var(--raised);color:#fff;display:grid;place-items:center}
+.tile-btn:hover,.chip-btn:hover{background:var(--raised-2)}
+.chip-btn{height:40px;padding:0 14px;border-radius:20px;background:var(--raised);color:#fff;font-size:13px;font-weight:600;white-space:nowrap}
+
+/* segmented control */
+.seg{display:flex;gap:4px;padding:4px;border-radius:14px;background:rgba(11,11,11,.1)}
+.seg button{min-height:44px;padding:0 20px;border-radius:11px;font-size:15px;font-weight:500;color:var(--ink);white-space:nowrap}
+.seg button.on{background:#fff}
+.seg.dark{background:var(--raised)}
+.seg.dark button{flex:1 1 0;padding:0 8px;font-size:14px;color:#fff}
+.seg.dark button.on{color:var(--ink)}
+
+/* date picker */
+.cal-head{display:flex;align-items:center;gap:6px}
+.cal-head strong{flex:1;font-size:17px;font-weight:600}
+.icon-btn{width:40px;height:40px;border-radius:50%;color:#fff;display:grid;place-items:center}
+.icon-btn:hover{background:var(--raised)}
+.cal-dow,.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.cal-dow span{text-align:center;font-size:13px;font-weight:600}
+.cal-grid{user-select:none;-webkit-user-select:none}
+.day{height:40px;border-radius:20px;font-size:14px;font-weight:500;color:#fff;touch-action:none}
+.day.out{color:var(--dim)}
+.day.today{box-shadow:inset 0 0 0 1px var(--lime)}
+.day:hover{background:var(--raised)}
+.day.on{background:var(--lime);color:var(--ink);box-shadow:none}
+.dow-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dow-btn{height:56px;border-radius:16px;background:var(--raised);color:#fff;font-size:14px;font-weight:600}
+.dow-btn.on{background:var(--lime);color:var(--ink)}
+
+/* sign in, people, events */
+.form{display:flex;flex-direction:column;gap:12px}
+.form label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.side input{height:46px;width:100%;min-width:0;padding:0 14px;border:1px solid #2F2F2F;border-radius:14px;background:#0D0D0D;color:#fff;font-size:15px}
+.side input::placeholder{color:var(--dim)}
+.btn-lime{min-height:48px;border-radius:14px;background:var(--lime);color:var(--ink);font-size:15px;font-weight:600}
+.btn-lime:hover{background:#EEFB7E}
+.err{font-size:13px;font-weight:600;color:#FFB4A8}
+.avatar{width:36px;height:36px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:700;color:var(--ink)}
+.avatar.big{width:44px;height:44px;font-size:16px}
+.who{display:flex;flex-direction:column;min-width:0}
+.who strong{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.count{min-width:28px;height:28px;padding:0 8px;border-radius:14px;background:var(--raised);display:inline-grid;place-items:center;font-size:13px;font-weight:600}
+.people,.events{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.people li{display:flex;align-items:center;gap:12px}
+.p-name{flex:1;min-width:0;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-status{font-size:12px;color:var(--muted);white-space:nowrap}
+.people li.busy{opacity:.5}
+.people li.busy .p-name{text-decoration:line-through}
+.people li.free .p-status{color:var(--lime)}
+.events{gap:4px;margin:0 -8px}
+.events li{display:flex;align-items:center;gap:4px}
+.ev{flex:1;min-width:0;min-height:52px;display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:14px;color:#fff;text-decoration:none}
+.ev:hover,.ev.cur{background:var(--raised)}
+.dot{width:10px;height:10px;flex:none;border-radius:50%}
+.ev-text{min-width:0;display:flex;flex-direction:column}
+.ev-name{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-meta{font-size:12px;color:var(--muted)}
+.x{width:40px;height:40px;flex:none;border-radius:50%;color:var(--muted);display:grid;place-items:center}
+.x:hover{background:var(--raised);color:#fff}
+.import{display:flex;gap:8px;align-items:flex-end}
+.import label{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.import .chip-btn{height:46px;border-radius:14px}
+
+/* main panel */
+.head{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+.title-wrap{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-size:13px;font-weight:600;color:var(--ink-2)}
+.title-input{width:100%;font-size:32px;font-weight:600;color:var(--ink);background:transparent;border:0;border-bottom:2px solid rgba(11,11,11,.28);border-radius:0;padding:2px 0 8px}
+.title-input::placeholder{color:rgba(11,11,11,.5)}
+.btn-black{min-height:52px;padding:0 28px;border-radius:14px;background:var(--ink);color:#fff;font-size:15px;font-weight:600;white-space:nowrap}
+.btn-black:hover{background:#2A2A2A}
+.head-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.between{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
+.sub-ink{font-size:14px;line-height:1.5;color:var(--ink-2)}
+.fields{display:flex;flex-wrap:wrap;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--ink-2);min-width:0}
+.field select{height:48px;min-width:150px;max-width:100%;padding:0 12px;border:0;border-radius:14px;background:#fff;color:var(--ink);font-size:15px;font-weight:500}
+.alert{background:#fff;border-radius:14px;padding:12px 16px;font-size:14px;font-weight:600;color:#9B1C1C}
+.meta{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:14px;color:var(--ink-2)}
+.tag{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:9px;background:var(--ink);color:#fff;font-size:13px;font-weight:600}
+.tag.pink{background:var(--pink);color:var(--pink-ink)}
+.empty{background:rgba(255,255,255,.55);border-radius:24px;padding:40px 24px;text-align:center;font-size:15px;color:var(--ink-2)}
+#preview{display:flex;flex-direction:column;gap:14px}
+
+/* availability boards */
+.boards{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start}
+.board{flex:1 1 360px;min-width:0;display:flex;flex-direction:column;gap:12px}
+.board-head{min-height:96px;display:flex;flex-direction:column;gap:6px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .scale{gap:3px}
+.sw{width:18px;height:18px;border-radius:6px;box-shadow:inset 0 0 0 1px rgba(11,11,11,.12)}
+#readout.live{font-weight:600;color:var(--ink)}
+.scroll{overflow-x:auto;padding-bottom:4px}
+.grid{display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;gap:6px;padding-right:14px}
+.tz-chip{width:52px;height:64px;flex:none;border-radius:16px;background:var(--lime);display:grid;place-items:center}
+.tz-chip span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:11px;font-weight:700}
+.chip{flex:1 0 44px;min-width:0;height:64px;border-radius:16px;background:rgba(255,255,255,.42);color:#26262E;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.chip small{font-size:12px;font-weight:500}
+.chip b{font-size:22px;font-weight:600;line-height:1}
+.chip.dow b{font-size:16px}
+button.chip:hover{background:rgba(255,255,255,.72)}
+button.chip.full{background:#fff;color:var(--violet)}
+.card{background:#fff;border-radius:24px;padding:20px 14px 20px 0;user-select:none;-webkit-user-select:none}
+.r{display:flex;gap:6px;height:16px}
+.r.gap{margin-top:14px}
+.r.end{height:0}
+.lab{width:52px;flex:none;position:relative}
+.lab span{position:absolute;right:8px;top:-8px;font-size:12px;line-height:16px;color:var(--ink-3);white-space:nowrap}
+.cell{flex:1 0 44px;min-width:0;height:16px;background:var(--cell)}
+.cell.none{background:transparent}
+.cell.h{box-shadow:inset 0 1px 0 rgba(11,11,11,.18)}
+.cell.hh{box-shadow:inset 0 1px 0 rgba(11,11,11,.07)}
+.cell.top{border-radius:8px 8px 0 0}
+.cell.bot{border-radius:0 0 8px 8px}
+.cell.top.bot{border-radius:8px}
+.cell.on{background:var(--lav)}
+button.cell:hover,button.tile:hover,.hot{outline:2px solid var(--ink);outline-offset:-2px}
+[data-g="mine"]{touch-action:none}
+.locked .card,.locked .chips{opacity:.55}
+.pv-row{display:flex;gap:6px;height:40px}
+.pv-row.end{height:1px}
+.pv-line{flex:1;border-top:1px solid var(--hair)}
+.tiles{padding:18px;display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:10px}
+.tile{height:96px;border-radius:18px;background:var(--cell);color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.tile .t-dow{font-size:13px}
+.tile .t-num{font-size:28px;font-weight:600;line-height:1}
+.tile.dow .t-num{font-size:20px}
+.tile .t-sub{font-size:12px}
+.tile.on{background:var(--lav)}
+
+#toast{position:fixed;left:50%;bottom:24px;max-width:calc(100vw - 32px);transform:translate(-50%,16px);background:#fff;color:var(--ink);padding:12px 18px;border-radius:14px;font-size:14px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:923px){ /* stacked: keep the grids right under sign-in, people and saved events after */
+  .side{display:contents}
+  .side>*{flex:1 1 100%}
+  .main{order:2;flex:1 1 100%}
+  .side>.after{order:3}
+}
+@media (max-width:600px){
+  #app{padding:10px}
+  .main{padding:18px;border-radius:22px}
+  h1,.title-input{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:24px">Overlap needs JavaScript to run.</p></noscript>
+<script>
+(function () {
+'use strict';
+
+var STORE = 'overlap.events.v1';
+var DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var WEEK = [1, 2, 3, 4, 5, 6, 0]; // Monday-first, like the calendar
+var AVATAR = ['#E4F65A', '#B5A6F5', '#BFE0EA', '#F9C9F4', '#FFD9A8', '#C8F0D0'];
+var ICON = {
+  logo: '<svg aria-hidden="true" width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#0B0B0B" stroke-width="2.4"><circle cx="10.5" cy="14" r="7.5"/><circle cx="17.5" cy="14" r="7.5"/></svg>',
+  plus: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>',
+  left: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5l-5 5 5 5"/></svg>',
+  right: '<svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l5 5-5 5"/></svg>',
+  x: '<svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>'
+};
+
+var app = document.getElementById('app');
+var $ = function (sel) { return document.querySelector(sel); };
+var each = function (sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); };
+var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+
+/* ---------- dates and time zones ---------- */
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function dkey(y, m, d) { return y + '-' + pad(m + 1) + '-' + pad(d); }
+function parseKey(k) { var p = k.split('-'); return { y: +p[0], m: +p[1] - 1, d: +p[2] }; }
+function addDays(k, n) { var p = parseKey(k), t = new Date(Date.UTC(p.y, p.m, p.d + n)); return dkey(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate()); }
+function dowOf(k) { var p = parseKey(k); return new Date(Date.UTC(p.y, p.m, p.d)).getUTCDay(); }
+function todayKey() { var n = new Date(); return dkey(n.getFullYear(), n.getMonth(), n.getDate()); }
+function longDate(k) { var p = parseKey(k); return DOW[dowOf(k)] + ' ' + p.d + ' ' + MON[p.m] + ' ' + p.y; }
+function timeLabel(min) { var h = Math.floor(min / 60) % 24, m = min % 60; return (h % 12 === 0 ? 12 : h % 12) + ':' + pad(m) + (h < 12 ? ' AM' : ' PM'); }
+function hourLabel(min) { var h = Math.floor(min / 60) % 24; return (h % 12 === 0 ? 12 : h % 12) + (h < 12 ? ' am' : ' pm'); }
+
+var fmtCache = {};
+function fmtFor(tz) {
+  if (!fmtCache[tz]) fmtCache[tz] = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' });
+  return fmtCache[tz];
+}
+function partsAt(ms, tz) {
+  var o = {};
+  fmtFor(tz).formatToParts(new Date(ms)).forEach(function (p) { o[p.type] = p.value; });
+  return { y: +o.year, m: +o.month - 1, d: +o.day, min: (+o.hour % 24) * 60 + +o.minute };
+}
+function offsetAt(ms, tz) { var p = partsAt(ms, tz); return (Date.UTC(p.y, p.m, p.d, 0, p.min) - ms) / 60000; }
+function toUtc(key, min, tz) { // wall-clock time in tz -> UTC ms
+  var p = parseKey(key), guess = Date.UTC(p.y, p.m, p.d, 0, min), o1 = offsetAt(guess, tz), utc = guess - o1 * 60000, o2 = offsetAt(utc, tz);
+  return o2 !== o1 ? guess - o2 * 60000 : utc;
+}
+function tzShort(tz) {
+  try { var now = Date.now(), o = offsetAt(now - (now % 60000), tz), a = Math.abs(o); return 'GMT' + (o < 0 ? '-' : '+') + Math.floor(a / 60) + (a % 60 ? ':' + pad(a % 60) : ''); } catch (e) { return 'GMT'; }
+}
+function validTz(tz) {
+  if (!tz || typeof tz !== 'string') return false;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (e) { return false; }
+}
+var LOCAL_TZ = 'UTC';
+try { LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch (e) {}
+var ZONES = (function () {
+  var z;
+  try { z = Intl.supportedValuesOf('timeZone').slice(); } catch (e) {
+    z = ['America/Los_Angeles', 'America/Denver', 'America/Chicago', 'America/New_York', 'America/Sao_Paulo', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Africa/Johannesburg', 'Asia/Dubai', 'Asia/Bangkok', 'Asia/Singapore', 'Asia/Shanghai', 'Asia/Tokyo', 'Australia/Sydney', 'Pacific/Auckland'].filter(validTz);
+  }
+  ['UTC', LOCAL_TZ].forEach(function (t) { if (z.indexOf(t) < 0) z.push(t); });
+  return z.sort();
+})();
+
+/* ---------- state ---------- */
+var now = new Date();
+var S = {
+  view: 'new', events: load(), curId: null, me: null,
+  draft: { name: '', kind: 'dates', mode: 'times', days: {}, dow: {}, start: 540, end: 1020, tz: LOCAL_TZ },
+  cal: { y: now.getFullYear(), m: now.getMonth() },
+  error: '', siErr: '', siName: '', siPw: '', viewTz: LOCAL_TZ, hover: null
+};
+var calKeys = [], layCache = {}, drag = null, toastTimer = 0, lastHash = null, storageWarned = false;
+// REMOTE is true when this page is served by server.js; answers are then shared through it
+var REMOTE = false, TEMPORARY = false, token = null, dirty = false, saving = false, creating = false, editSeq = 0, netWarned = false;
+
+function load() {
+  try { var a = JSON.parse(localStorage.getItem(STORE) || '[]'); return Array.isArray(a) ? a.map(cleanEvent).filter(Boolean) : []; } catch (e) { return []; }
+}
+function save() {
+  try { localStorage.setItem(STORE, JSON.stringify(S.events)); } catch (e) {
+    if (!storageWarned) toast('This browser is blocking storage, so changes will be lost when you close the page.');
+    storageWarned = true;
+  }
+}
+function cur() { for (var i = 0; i < S.events.length; i++) if (S.events[i].id === S.curId) return S.events[i]; return null; }
+function mePerson(ev) { if (!ev || !S.me) return null; for (var i = 0; i < ev.people.length; i++) if (ev.people[i].name === S.me) return ev.people[i]; return null; }
+function newId() { return Math.random().toString(36).slice(2, 10); }
+function allKeys(ev) {
+  if (ev.mode === 'days') return ev.days.slice();
+  var out = [];
+  ev.days.forEach(function (d) { for (var m = ev.start; m < ev.end; m += 15) out.push(d + '@' + m); });
+  return out;
+}
+function cleanEvent(o) { // validate anything read from storage or an invite link
+  if (!o || typeof o !== 'object') return null;
+  var id = String(o.id || '');
+  if (!/^[a-z0-9]{4,24}$/.test(id)) return null;
+  var kind = o.kind === 'dow' ? 'dow' : 'dates', mode = o.mode === 'days' ? 'days' : 'times', seenDay = {};
+  var days = (Array.isArray(o.days) ? o.days : []).filter(function (k) { if (typeof k !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(k) || seenDay[k]) return false; seenDay[k] = 1; return true; }).slice(0, 366).sort();
+  if (!days.length) return null;
+  var start = +o.start, end = +o.end;
+  if (mode === 'times' && !(start >= 0 && end <= 1440 && end > start && start % 15 === 0 && end % 15 === 0)) return null;
+  if (mode === 'days') { start = 540; end = 1020; }
+  var ev = { id: id, name: String(o.name || 'New event').slice(0, 120), kind: kind, mode: mode, days: days, start: start, end: end, tz: validTz(o.tz) ? o.tz : LOCAL_TZ, created: +o.created || Date.now(), people: [] };
+  var ok = {}, seen = {};
+  allKeys(ev).forEach(function (k) { ok[k] = 1; });
+  (Array.isArray(o.people) ? o.people : []).slice(0, 300).forEach(function (p) {
+    if (!p || typeof p.name !== 'string') return;
+    var name = p.name.trim().slice(0, 40), lk = name.toLowerCase(), slots = {};
+    if (!name || seen[lk]) return;
+    seen[lk] = 1;
+    if (p.slots && typeof p.slots === 'object') Object.keys(p.slots).forEach(function (k) { if (p.slots[k] && ok[k]) slots[k] = 1; });
+    ev.people.push({ name: name, pw: typeof p.pw === 'string' ? p.pw : null, slots: slots, updated: +p.updated || 0 });
+  });
+  return ev;
+}
+function draftDays() {
+  var d = S.draft;
+  if (d.kind === 'dates') return Object.keys(d.days).sort();
+  var today = todayKey(), monday = addDays(today, -((dowOf(today) + 6) % 7));
+  return Object.keys(d.dow).map(Number).sort(function (a, b) { return a - b; }).map(function (i) { return addDays(monday, i); });
+}
+function colKeyOf(key, kind) { return kind === 'dow' ? String((dowOf(key) + 6) % 7) : key; }
+function colInfo(ck, kind) {
+  if (kind === 'dow') { var name = DOW[WEEK[+ck]]; return { dow: '', num: name.slice(0, 3), mon: '', long: name, cls: ' dow' }; }
+  var p = parseKey(ck), d = DOW[dowOf(ck)], mo = MON[p.m].slice(0, 3);
+  return { dow: d.slice(0, 3).toLowerCase(), num: String(p.d), mon: mo, long: d.slice(0, 3) + ' ' + p.d + ' ' + mo, cls: '' };
+}
+function layout(ev, tz) { // where each 15-minute slot sits in the viewer's time zone
+  var ck = ev.id + '|' + tz;
+  if (layCache[ck]) return layCache[ck];
+  var same = tz === ev.tz, cols = {}, rows = {}, cells = {};
+  ev.days.forEach(function (day) {
+    for (var m = ev.start; m < ev.end; m += 15) {
+      var d = day, mm = m;
+      if (!same) { var p = partsAt(toUtc(day, m, ev.tz), tz); d = dkey(p.y, p.m, p.d); mm = p.min; }
+      var c = colKeyOf(d, ev.kind);
+      cols[c] = 1; rows[mm] = 1; cells[c + '@' + mm] = day + '@' + m;
+    }
+  });
+  return (layCache[ck] = { colKeys: Object.keys(cols).sort(), rowMins: Object.keys(rows).map(Number).sort(function (a, b) { return a - b; }), cells: cells });
+}
+function colSlots(L, ck) { return L.rowMins.map(function (r) { return L.cells[ck + '@' + r]; }).filter(Boolean); }
+function heatT(c, n) { return n > 1 ? (c - 1) / (n - 1) : 1; }
+function heat(c, n) {
+  if (!c || !n) return '#EFEDF5';
+  var a = [203, 192, 247], b = [75, 47, 203], t = heatT(c, n);
+  return 'rgb(' + a.map(function (x, i) { return Math.round(x + (b[i] - x) * t); }).join(',') + ')';
+}
+function heatInk(c, n) { return c && n && heatT(c, n) >= 0.65 ? '#FFFFFF' : '#0B0B0B'; }
+function unit(ev, c) { return ev.mode === 'times' ? (c === 1 ? 'slot' : 'slots') : ev.kind === 'dow' ? (c === 1 ? 'day' : 'days') : (c === 1 ? 'date' : 'dates'); }
+
+/* ---------- invite links ---------- */
+function url64(s) { return s.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+function un64(s) { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return s; }
+function b64e(str) { return url64(btoa(unescape(encodeURIComponent(str)))); }
+function b64d(code) { return decodeURIComponent(escape(atob(un64(code)))); }
+function pack(bits) {
+  var s = '';
+  for (var i = 0; i < bits.length; i += 8) { var b = 0; for (var j = 0; j < 8; j++) b = (b << 1) | (bits[i + j] ? 1 : 0); s += String.fromCharCode(b); }
+  return url64(btoa(s));
+}
+function unpack(str, n) {
+  var bin = atob(un64(str)), out = [];
+  for (var i = 0; i < n; i++) out.push(((bin.charCodeAt(i >> 3) || 0) >> (7 - (i & 7))) & 1);
+  return out;
+}
+function toCode(ev) { // passwords never leave this browser
+  var keys = allKeys(ev);
+  return b64e(JSON.stringify({ v: 1, id: ev.id, n: ev.name, k: ev.kind, m: ev.mode, d: ev.days, s: ev.start, e: ev.end, z: ev.tz, c: ev.created,
+    p: ev.people.map(function (p) { return [p.name, p.updated || 0, pack(keys.map(function (k) { return p.slots[k] ? 1 : 0; }))]; }) }));
+}
+function fromCode(code) {
+  var o = JSON.parse(b64d(code));
+  if (!o || o.v !== 1) throw new Error('unsupported');
+  var ev = cleanEvent({ id: o.id, name: o.n, kind: o.k, mode: o.m, days: o.d, start: o.s, end: o.e, tz: o.z, created: o.c });
+  if (!ev) throw new Error('invalid');
+  var keys = allKeys(ev), people = [];
+  (Array.isArray(o.p) ? o.p : []).forEach(function (row) {
+    if (!Array.isArray(row)) return;
+    var bits = unpack(String(row[2] || ''), keys.length), slots = {};
+    keys.forEach(function (k, i) { if (bits[i]) slots[k] = 1; });
+    people.push({ name: String(row[0] || ''), slots: slots, updated: +row[1] || 0 });
+  });
+  return cleanEvent(Object.assign({}, ev, { people: people }));
+}
+function mergeEvent(inc) {
+  var loc = null;
+  S.events.forEach(function (e) { if (e.id === inc.id) loc = e; });
+  if (!loc) { S.events.unshift(inc); return inc; }
+  inc.people.forEach(function (p) {
+    var mine = null;
+    loc.people.forEach(function (q) { if (q.name.toLowerCase() === p.name.toLowerCase()) mine = q; });
+    if (!mine) loc.people.push(p);
+    else if ((p.updated || 0) > (mine.updated || 0)) { mine.slots = p.slots; mine.updated = p.updated; }
+  });
+  return loc;
+}
+function importText(text) {
+  var code = String(text || '').trim(), i = code.indexOf('share=');
+  if (i >= 0) code = code.slice(i + 6);
+  if (!code) { toast('Paste an invite link first.'); return; }
+  try { var ev = mergeEvent(fromCode(code)); save(); toast('Imported “' + ev.name + '”.'); go('e=' + ev.id); }
+  catch (e) { toast('That invite link could not be read.'); }
+}
+function legacyCopy(text) {
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) { return false; }
+}
+function copyLink() {
+  var ev = cur();
+  if (!ev) return;
+  var url = location.href.split('#')[0] + (REMOTE ? '#e=' + ev.id : '#share=' + toCode(ev));
+  var local = REMOTE && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  var ok = function () { toast(local ? 'Copied, but this localhost link only works on this laptop. Open the page through your public link and copy it there.' : 'Invite link copied.'); };
+  var fallback = function () { if (legacyCopy(url)) ok(); else window.prompt('Copy this invite link:', url); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(ok, fallback); else fallback();
+}
+
+/* ---------- sign in ---------- */
+function weakHash(s) {
+  var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (var i = 0; i < s.length; i++) { var ch = s.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (h2 >>> 0).toString(16) + (h1 >>> 0).toString(16);
+}
+function pwHash(salt, pw) {
+  var s = salt + '\n' + pw, weak = function () { return 'w:' + weakHash(s); };
+  try {
+    if (window.crypto && crypto.subtle && window.TextEncoder) {
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (buf) {
+        return 's:' + Array.prototype.map.call(new Uint8Array(buf), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+      }, weak);
+    }
+  } catch (e) {}
+  return Promise.resolve(weak());
+}
+function pwOk(stored, salt, pw) {
+  if (stored.indexOf('w:') === 0) return Promise.resolve(stored === 'w:' + weakHash(salt + '\n' + pw));
+  return pwHash(salt, pw).then(function (h) { return h === stored; });
+}
+function signIn(rawName, pw) {
+  var ev = cur();
+  if (!ev) return;
+  var name = String(rawName || '').trim().slice(0, 40);
+  S.siName = name;
+  if (!name) { S.siErr = 'Enter your name to sign in.'; render(); return; }
+  if (REMOTE) { signInRemote(ev, name, pw); return; }
+  var salt = ev.id + '/' + name.toLowerCase(), ex = null;
+  ev.people.forEach(function (p) { if (p.name.toLowerCase() === name.toLowerCase()) ex = p; });
+  var done = function (p) { S.me = p.name; S.siErr = ''; S.siName = ''; S.siPw = ''; S.hover = null; render(); };
+  if (ex) {
+    if (!ex.pw) { done(ex); return; }
+    pwOk(ex.pw, salt, pw || '').then(function (ok) {
+      if (ok) done(ex); else { S.siErr = 'That name is taken on this event and the password does not match.'; render(); }
+    });
+    return;
+  }
+  (pw ? pwHash(salt, pw) : Promise.resolve(null)).then(function (h) {
+    var p = { name: name, pw: h, slots: {}, updated: Date.now() };
+    ev.people.push(p); save(); done(p);
+  });
+}
+/* ---------- shared storage (only when this page is served by server.js) ---------- */
+function api(method, path, body) {
+  var opt = { method: method, cache: 'no-store' };
+  if (body) { opt.headers = { 'Content-Type': 'application/json' }; opt.body = JSON.stringify(body); }
+  return fetch('api/' + path, opt).then(function (r) {
+    return r.json().catch(function () { return {}; }).then(function (j) {
+      if (!r.ok) { var e = new Error(j.error || 'http ' + r.status); e.status = r.status; throw e; }
+      return j;
+    });
+  });
+}
+function adopt(ev) { // take the server's copy of an event
+  for (var i = 0; i < S.events.length; i++) if (S.events[i].id === ev.id) { S.events[i] = ev; save(); return; }
+  S.events.unshift(ev);
+  save();
+}
+function loadRemote(id) {
+  api('GET', 'events/' + id).then(function (j) {
+    var ev = cleanEvent(j.event);
+    if (!ev) throw new Error('invalid');
+    adopt(ev);
+    if (lastHash === 'e=' + id) showRoute(id);
+  }).catch(function (e) {
+    if (lastHash !== 'e=' + id) return;
+    if (e.status === 404) { S.events = S.events.filter(function (x) { return x.id !== id; }); save(); toast('That event was not found.'); showRoute(null); }
+    else { toast('Could not reach the server.'); showRoute(id); }
+  });
+}
+function signInRemote(ev, name, pw) {
+  api('POST', 'events/' + ev.id + '/signin', { name: name, pw: pw || '' }).then(function (j) {
+    var fresh = cleanEvent(j.event);
+    if (fresh) adopt(fresh);
+    token = j.token; S.me = j.name; S.siErr = ''; S.siName = ''; S.siPw = ''; S.hover = null;
+    render();
+  }, function (e) {
+    S.siErr = e.status === 403 ? 'That name is taken on this event and the password does not match.'
+      : e.status === 429 ? 'Too many tries. Wait a minute, then try again.'
+      : e.status === 404 ? 'This event is no longer on the server.'
+      : e.status === 409 ? 'This event has reached its limit of people.'
+      : 'Could not reach the server. Try again.';
+    render();
+  });
+}
+function saveMine() { // my availability changed
+  editSeq++;
+  save();
+  if (REMOTE) { dirty = true; pushSlots(); }
+}
+function pushSlots() {
+  if (saving) return;
+  var ev = cur(), me = mePerson(ev);
+  if (!ev || !me || !token) { dirty = false; return; }
+  saving = true; dirty = false;
+  api('PUT', 'events/' + ev.id + '/slots', { token: token, slots: me.slots }).then(function () {
+    saving = false; netWarned = false;
+    if (dirty) pushSlots();
+  }, function (e) {
+    saving = false;
+    if (e.status === 401 || e.status === 404) { token = null; S.me = null; S.siErr = 'Please sign in again to keep editing.'; render(); return; }
+    dirty = true;
+    if (!netWarned) toast('Could not save your changes. Retrying while this page stays open.');
+    netWarned = true;
+  });
+}
+function poll() { // pick up other people's answers
+  if (!REMOTE || S.view !== 'event' || drag || saving || document.hidden) return;
+  if (dirty) { pushSlots(); return; }
+  var id = S.curId, seq = editSeq, old = cur();
+  if (!old) return;
+  api('GET', 'events/' + id).then(function (j) {
+    if (seq !== editSeq || drag || dirty || saving || S.curId !== id || S.view !== 'event') return;
+    var ev = cleanEvent(j.event), names = function (e) { return e.people.map(function (p) { return p.name; }).join('\n'); };
+    if (!ev || JSON.stringify(old.people) === JSON.stringify(ev.people)) return;
+    adopt(ev);
+    if (names(old) !== names(ev)) render(); else paint();
+  }, function () {});
+}
+
+function needSignIn() {
+  S.siErr = 'Sign in first to add your availability.';
+  render();
+  var el = $('#signin input[name="name"]');
+  if (el) el.focus();
+}
+
+/* ---------- views ---------- */
+function segBtn(act, val, label, on) {
+  return '<button type="button" data-act="' + act + '" data-v="' + val + '" data-fid="' + act + '-' + val + '" aria-pressed="' + on + '"' + (on ? ' class="on"' : '') + '>' + label + '</button>';
+}
+function timeOptions(from, to, selected) {
+  var h = '';
+  for (var m = from; m <= to; m += 60) h += '<option value="' + m + '"' + (m === selected ? ' selected' : '') + '>' + timeLabel(m) + (m === 1440 ? ' (midnight)' : '') + '</option>';
+  return h;
+}
+function tzOptions(selected) {
+  return ZONES.map(function (z) { return '<option' + (z === selected ? ' selected' : '') + '>' + esc(z) + '</option>'; }).join('');
+}
+function chipInner(c) { return (c.dow ? '<small>' + c.dow + '</small>' : '') + '<b>' + c.num + '</b>'; }
+function tileInner(c, sub) { return (c.dow ? '<span class="t-dow">' + c.dow + '</span>' : '') + '<span class="t-num">' + c.num + '</span><span class="t-sub">' + sub + '</span>'; }
+
+function brand() {
+  return '<div class="panel brand"><div class="logo">' + ICON.logo + '</div><div class="brand-text"><strong>Overlap</strong><span>Find a time that works</span></div>' +
+    '<button type="button" class="tile-btn" data-act="new" data-fid="new" aria-label="Plan a new event" title="Plan a new event">' + ICON.plus + '</button></div>';
+}
+
+function sideNew() {
+  var d = S.draft, h = '<section class="panel"><div><h2>What dates might work?</h2><p class="sub">Click and drag to choose possibilities.</p></div>' +
+    '<div class="seg dark" role="group" aria-label="Survey using">' + segBtn('kind', 'dates', 'Specific dates', d.kind === 'dates') + segBtn('kind', 'dow', 'Days of the week', d.kind === 'dow') + '</div>';
+  if (d.kind === 'dates') {
+    var lead = (new Date(Date.UTC(S.cal.y, S.cal.m, 1)).getUTCDay() + 6) % 7, today = todayKey();
+    h += '<div class="cal-head"><strong>' + MON[S.cal.m] + ' ' + S.cal.y + '</strong>' +
+      '<button type="button" class="icon-btn" data-act="prev" data-fid="prev" aria-label="Previous month">' + ICON.left + '</button>' +
+      '<button type="button" class="icon-btn" data-act="next" data-fid="next" aria-label="Next month">' + ICON.right + '</button></div>' +
+      '<div class="cal-dow" aria-hidden="true">' + WEEK.map(function (w) { return '<span>' + DOW[w].slice(0, 2) + '</span>'; }).join('') + '</div><div class="cal-grid">';
+    calKeys = [];
+    for (var i = 0; i < 42; i++) {
+      var t = new Date(Date.UTC(S.cal.y, S.cal.m, 1 - lead + i)), key = dkey(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate());
+      calKeys.push(key);
+      h += '<button type="button" class="day' + (t.getUTCMonth() !== S.cal.m ? ' out' : '') + (key === today ? ' today' : '') + '" data-g="cal" data-i="' + i + '" data-k="' + key + '" data-fid="cal-' + i + '" aria-pressed="false" aria-label="' + longDate(key) + '">' + t.getUTCDate() + '</button>';
+    }
+    h += '</div>';
+  } else {
+    h += '<div class="dow-grid">' + WEEK.map(function (w, i) { return '<button type="button" class="dow-btn" data-act="dow" data-v="' + i + '" data-fid="dow-' + i + '" aria-pressed="false" aria-label="' + DOW[w] + '">' + DOW[w].slice(0, 3) + '</button>'; }).join('') + '</div>';
+  }
+  return h + '<div class="row"><span class="sub grow" id="picked"></span>' +
+    (d.kind === 'dates' ? '<button type="button" class="chip-btn" data-act="today" data-fid="today">Today</button>' : '') +
+    '<button type="button" class="chip-btn" data-act="clear" data-fid="clear">Clear</button></div></section>';
+}
+
+function sideEvent(ev) {
+  var me = mePerson(ev), n = ev.people.length, h = '<section class="panel" id="signin">';
+  if (me) {
+    h += '<div class="row" style="gap:12px"><span class="avatar big" style="background:' + AVATAR[ev.people.indexOf(me) % AVATAR.length] + '">' + esc(me.name.charAt(0).toUpperCase()) + '</span>' +
+      '<div class="who grow"><strong>' + esc(me.name) + '</strong><span class="sub">Signed in to this event</span></div>' +
+      '<button type="button" class="chip-btn" data-act="signout" data-fid="signout">Sign out</button></div>';
+  } else {
+    h += '<h2>Sign in</h2><form class="form" data-form="signin" novalidate>' +
+      '<label>Your name<input name="name" maxlength="40" autocomplete="off" data-fid="si-name" value="' + esc(S.siName) + '"></label>' +
+      '<label>Password (optional)<input name="pw" type="password" autocomplete="off" data-fid="si-pw" value="' + esc(S.siPw) + '"></label>' +
+      (S.siErr ? '<div class="err" role="alert">' + esc(S.siErr) + '</div>' : '') +
+      '<button type="submit" class="btn-lime">Sign in</button></form>' +
+      '<p class="sub" style="font-size:12px">Name and password are only for this event. New here? Make up a password. Returning? Use the same name and password.</p>';
+  }
+  h += '</section><section class="panel after"><div class="row"><h2 class="grow">People</h2><span class="count">' + n + '</span></div>';
+  if (!n) h += '<p class="sub">No one has responded yet. Sign in above to be the first.</p>';
+  else h += '<ul class="people">' + ev.people.map(function (p, i) {
+    return '<li data-p="' + i + '"><span class="avatar" style="background:' + AVATAR[i % AVATAR.length] + '">' + esc(p.name.charAt(0).toUpperCase()) + '</span><span class="p-name">' + esc(p.name) + '</span><span class="p-status"></span></li>';
+  }).join('') + '</ul>';
+  return h + '</section>';
+}
+
+function sideEvents() {
+  var h = '<section class="panel after"><h2>My events</h2>';
+  if (!S.events.length) h += '<p class="sub">' + (REMOTE ? 'Events you create or open are remembered in this browser.' : 'Events you create or import are saved in this browser.') + '</p>';
+  else h += '<ul class="events">' + S.events.map(function (e) {
+    var n = e.people.length, meta = (e.mode === 'days' ? 'Dates only' : timeLabel(e.start) + ' – ' + timeLabel(e.end)) + ' · ' + n + (n === 1 ? ' response' : ' responses');
+    return '<li><a class="ev' + (S.view === 'event' && e.id === S.curId ? ' cur' : '') + '" href="#e=' + e.id + '" data-act="open" data-id="' + e.id + '" data-fid="ev-' + e.id + '"><span class="dot" style="background:' + (e.mode === 'days' ? 'var(--pink)' : 'var(--lav)') + '"></span>' +
+      '<span class="ev-text"><span class="ev-name">' + esc(e.name) + '</span><span class="ev-meta">' + meta + '</span></span></a>' +
+      '<button type="button" class="x" data-act="del" data-id="' + e.id + '" aria-label="Delete ' + esc(e.name) + '" title="Delete event">' + ICON.x + '</button></li>';
+  }).join('') + '</ul>';
+  if (REMOTE) { // links open the shared event directly, nothing to import
+    return h + (TEMPORARY ? '<p class="err" role="note">This server has no database attached, so events can disappear whenever it restarts.</p>' : '') + '</section>';
+  }
+  return h + '<form class="import" data-form="import"><label>Import an invite link<input name="code" autocomplete="off" placeholder="Paste a link here" data-fid="import"></label><button type="submit" class="chip-btn">Import</button></form></section>';
+}
+
+function mainNew() {
+  var d = S.draft, times = d.mode === 'times';
+  return '<header class="head"><div class="title-wrap"><label class="eyebrow" for="ev-name">Plan a new event</label>' +
+    '<input id="ev-name" class="title-input" data-fid="name" placeholder="New event name" maxlength="120" autocomplete="off" value="' + esc(d.name) + '"></div>' +
+    '<button type="button" class="btn-black" data-act="create" data-fid="create">Create event</button></header>' +
+    '<div class="between"><div><h2>What times might work?</h2><p class="sub-ink">' + (times ? 'People paint the hours they are free, in 15-minute slots.' : 'No hours. People just tap the dates they are free.') + '</p></div>' +
+    '<div class="seg" role="group" aria-label="What people fill in">' + segBtn('mode', 'times', 'Pick hours', times) + segBtn('mode', 'days', 'Dates only', !times) + '</div></div>' +
+    '<div class="alert" id="error" role="alert"' + (S.error ? '' : ' hidden') + '>' + esc(S.error) + '</div>' +
+    (times ? '<div class="fields"><label class="field">No earlier than<select data-field="start" data-fid="f-start">' + timeOptions(0, 1380, d.start) + '</select></label>' +
+      '<label class="field">No later than<select data-field="end" data-fid="f-end">' + timeOptions(60, 1440, d.end) + '</select></label>' +
+      '<label class="field">Time zone<select data-field="tz" data-fid="f-tz">' + tzOptions(d.tz) + '</select></label></div>' : '') +
+    '<div id="preview"></div>';
+}
+
+function previewHtml() {
+  var d = S.draft, keys = draftDays();
+  if (!keys.length) return '<div class="empty">Choose ' + (d.kind === 'dates' ? 'dates' : 'days') + ' on the left to preview what people will fill in.</div>';
+  var cols = keys.map(function (k) { return colInfo(colKeyOf(k, d.kind), d.kind); });
+  if (d.mode === 'days') {
+    return '<div class="card tiles">' + cols.map(function (c) { return '<div class="tile' + c.cls + '">' + tileInner(c, c.mon) + '</div>'; }).join('') + '</div>' +
+      '<p class="sub-ink">Dates only: each person just taps the dates they are free. There are no hours to fill in.</p>';
+  }
+  if (d.end <= d.start) return '<div class="empty">The latest time must be after the earliest time.</div>';
+  var h = '<div class="scroll"><div class="grid" style="min-width:' + (66 + cols.length * 50) + 'px"><div class="chips"><div class="tz-chip" title="' + esc(d.tz) + '"><span>' + tzShort(d.tz) + '</span></div>' +
+    cols.map(function (c) { return '<div class="chip' + c.cls + '">' + chipInner(c) + '</div>'; }).join('') + '</div><div class="card">';
+  for (var m = d.start; m <= d.end; m += 60) h += '<div class="pv-row' + (m === d.end ? ' end' : '') + '"><div class="lab"><span>' + hourLabel(m) + '</span></div><div class="pv-line"></div></div>';
+  return h + '</div></div></div>';
+}
+
+function timeGrid(ev, which) {
+  var L = layout(ev, S.viewTz), mine = which === 'mine', nR = L.rowMins.length;
+  var cols = L.colKeys.map(function (k) { return colInfo(k, ev.kind); });
+  var h = '<div class="scroll"><div class="grid" style="min-width:' + (66 + cols.length * 50) + 'px"><div class="chips"><div class="tz-chip" title="' + esc(S.viewTz) + '"><span>' + tzShort(S.viewTz) + '</span></div>';
+  cols.forEach(function (c, i) {
+    h += mine ? '<button type="button" class="chip' + c.cls + '" data-act="daycol" data-c="' + i + '" aria-pressed="false" aria-label="Toggle all of ' + c.long + '">' + chipInner(c) + '</button>'
+      : '<div class="chip' + c.cls + '">' + chipInner(c) + '</div>';
+  });
+  h += '</div><div class="card">';
+  L.rowMins.forEach(function (rm, ri) {
+    var gap = ri > 0 && rm - L.rowMins[ri - 1] > 15, top = ri === 0 || gap, bot = ri === nR - 1 || L.rowMins[ri + 1] - rm > 15;
+    var cls = 'cell' + (rm % 60 === 0 ? ' h' : rm % 30 === 0 ? ' hh' : '') + (top ? ' top' : '') + (bot ? ' bot' : '');
+    h += '<div class="r' + (gap ? ' gap' : '') + '"><div class="lab">' + (rm % 60 === 0 ? '<span>' + hourLabel(rm) + '</span>' : '') + '</div>';
+    L.colKeys.forEach(function (ck, ci) {
+      var key = L.cells[ck + '@' + rm];
+      if (!key) { h += '<span class="cell none"></span>'; return; }
+      var label = cols[ci].long + ', ' + timeLabel(rm);
+      h += '<button type="button" class="' + cls + '" data-g="' + which + '" data-k="' + key + '" data-c="' + ci + '" data-r="' + ri + '" data-l="' + label + '" aria-label="' + label + '"' + (mine ? ' aria-pressed="false"' : '') + '></button>';
+    });
+    h += '</div>';
+  });
+  var endMin = nR ? L.rowMins[nR - 1] + 15 : 1;
+  if (endMin % 60 === 0) h += '<div class="r end"><div class="lab"><span>' + hourLabel(endMin) + '</span></div></div>';
+  return h + '</div></div></div>';
+}
+
+function tileGrid(ev, which) {
+  var mine = which === 'mine';
+  return '<div class="card tiles">' + ev.days.map(function (key) {
+    var c = colInfo(colKeyOf(key, ev.kind), ev.kind);
+    return '<button type="button" class="tile' + c.cls + '" data-g="' + which + '" data-k="' + key + '" data-l="' + c.long + '" aria-label="' + c.long + '"' + (mine ? ' aria-pressed="false"' : '') + '>' +
+      tileInner(c, mine ? c.mon : (c.mon ? c.mon + ' · ' : '') + '<span class="cnt"></span>') + '</button>';
+  }).join('') + '</div>';
+}
+
+function mainEvent(ev) {
+  var times = ev.mode === 'times', me = mePerson(ev), n = ev.people.length, nd = ev.days.length, legend = '';
+  var steps = Math.min(n, 8);
+  if (!n) legend = '<i class="sw" style="background:' + heat(0, 0) + '"></i>';
+  else for (var i = 0; i <= steps; i++) legend += '<i class="sw" style="background:' + heat(Math.round(i * n / steps), n) + '"></i>';
+  var grid = times ? timeGrid : tileGrid;
+  return '<header class="head" style="align-items:flex-start"><div class="title-wrap"><h1>' + esc(ev.name) + '</h1><div class="meta">' +
+    (times ? '<span class="tag">' + timeLabel(ev.start) + ' – ' + timeLabel(ev.end) + '</span>' : '<span class="tag pink">Dates only</span>') +
+    '<span>' + nd + ' ' + (ev.kind === 'dow' ? (nd === 1 ? 'day' : 'days') : (nd === 1 ? 'date' : 'dates')) + ' · ' + n + (n === 1 ? ' response' : ' responses') + '</span></div></div>' +
+    '<div class="head-actions">' + (times ? '<label class="field">Your time zone<select data-field="viewtz" data-fid="f-viewtz">' + tzOptions(S.viewTz) + '</select></label>' : '') +
+    '<button type="button" class="btn-black" data-act="copy" data-fid="copy">Copy invite link</button></div></header>' +
+    '<p class="sub-ink">' + (REMOTE ? 'Send the invite link to your friends. Their answers show up here a few seconds after they add them.'
+      : 'The invite link carries this event and every response so far. Send it along with this file. Whoever opens it can add their own availability and send a link back for you to import.') + '</p>' +
+    '<div class="boards"><section class="board' + (me ? '' : ' locked') + '"><div class="board-head"><h2>' + (me ? esc(me.name) + '’s availability' : 'Your availability') + '</h2>' +
+    '<div class="legend"><span><i class="sw" style="background:var(--cell)"></i>Unavailable</span><span><i class="sw" style="background:var(--lav)"></i>Available</span></div>' +
+    '<p class="sub-ink">' + (!me ? 'Sign in on the left to add your availability.' : times ? 'Click and drag to toggle. Tap a day to fill the whole day. Saved immediately.' : 'Tap the dates you are free. Saved immediately.') + '</p></div>' +
+    grid(ev, 'mine') + '</section>' +
+    '<section class="board group-board"><div class="board-head"><h2>Group’s availability</h2>' +
+    '<div class="legend"><span>0/' + n + '</span><span class="scale">' + legend + '</span><span>' + n + '/' + n + ' available</span></div>' +
+    '<p class="sub-ink" id="readout" aria-live="polite"></p></div>' + grid(ev, 'group') + '</section></div>';
+}
+
+function render() {
+  var ev = S.view === 'event' ? cur() : null;
+  if (!ev) S.view = 'new';
+  var act = document.activeElement, fid = act && act.dataset ? act.dataset.fid : null, caret = null;
+  try { if (fid && typeof act.selectionStart === 'number') caret = [act.selectionStart, act.selectionEnd]; } catch (e) {}
+  app.innerHTML = '<aside class="side">' + brand() + (ev ? sideEvent(ev) : sideNew()) + sideEvents() + '</aside><main class="main">' + (ev ? mainEvent(ev) : mainNew()) + '</main>';
+  document.title = (ev ? ev.name + ' · ' : '') + 'Overlap';
+  if (ev) paint(); else updateDraft();
+  if (fid) {
+    var el = app.querySelector('[data-fid="' + fid + '"]');
+    if (el) { el.focus(); if (caret) try { el.setSelectionRange(caret[0], caret[1]); } catch (e) {} }
+  }
+}
+
+/* ---------- in-place updates (no rebuild while dragging) ---------- */
+function updateDraft() {
+  var d = S.draft, n = draftDays().length, u = d.kind === 'dates' ? 'date' : 'day';
+  each('[data-g="cal"]', function (el) { var on = !!d.days[el.dataset.k]; el.classList.toggle('on', on); el.setAttribute('aria-pressed', on); });
+  each('[data-act="dow"]', function (el) { var on = !!d.dow[el.dataset.v]; el.classList.toggle('on', on); el.setAttribute('aria-pressed', on); });
+  var picked = $('#picked'), err = $('#error'), pv = $('#preview');
+  if (picked) picked.textContent = n ? n + ' ' + u + (n === 1 ? '' : 's') + ' selected' : 'No ' + u + 's selected yet';
+  if (err) { err.hidden = !S.error; err.textContent = S.error; }
+  if (pv) pv.innerHTML = previewHtml();
+}
+function paint() {
+  var ev = cur();
+  if (!ev || S.view !== 'event') return;
+  var me = mePerson(ev), n = ev.people.length, counts = {};
+  ev.people.forEach(function (p) { for (var k in p.slots) counts[k] = (counts[k] || 0) + 1; });
+  each('[data-g="mine"]', function (el) { var on = !!(me && me.slots[el.dataset.k]); el.classList.toggle('on', on); el.setAttribute('aria-pressed', on); });
+  each('[data-g="group"]', function (el) {
+    var c = counts[el.dataset.k] || 0, cnt = el.querySelector('.cnt');
+    el.style.background = heat(c, n); el.style.color = heatInk(c, n);
+    el.setAttribute('aria-label', el.dataset.l + ': ' + c + ' of ' + n + ' available');
+    if (cnt) cnt.textContent = c + '/' + n;
+  });
+  if (ev.mode === 'times') {
+    var L = layout(ev, S.viewTz);
+    each('[data-act="daycol"]', function (el) {
+      var keys = colSlots(L, L.colKeys[+el.dataset.c]), full = !!me && keys.length > 0 && keys.every(function (k) { return me.slots[k]; });
+      el.classList.toggle('full', full); el.setAttribute('aria-pressed', full);
+    });
+  }
+  paintHover();
+}
+function paintHover() {
+  var ev = cur();
+  if (!ev) return;
+  var n = ev.people.length, h = S.hover, out = $('#readout');
+  if (out) {
+    var c = 0;
+    if (h) ev.people.forEach(function (p) { if (p.slots[h.key]) c++; });
+    out.textContent = h ? c + '/' + n + ' available · ' + h.label : 'Hover or tap a slot to see who is available.';
+    out.classList.toggle('live', !!h);
+  }
+  each('[data-p]', function (li) {
+    var p = ev.people[+li.dataset.p];
+    if (!p) return;
+    var free = h ? !!p.slots[h.key] : null, c = Object.keys(p.slots).length;
+    li.classList.toggle('busy', free === false); li.classList.toggle('free', free === true);
+    li.querySelector('.p-status').textContent = free === null ? c + ' ' + unit(ev, c) : free ? 'Available' : 'Unavailable';
+  });
+  each('.hot', function (el) { el.classList.remove('hot'); });
+  if (h) { var el = $('[data-g="group"][data-k="' + h.key + '"]'); if (el) el.classList.add('hot'); }
+}
+function setHover(cell) {
+  var key = cell ? cell.dataset.k : null;
+  if ((S.hover ? S.hover.key : null) === key) return;
+  S.hover = cell ? { key: key, label: cell.dataset.l } : null;
+  paintHover();
+}
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+}
+
+/* ---------- actions ---------- */
+function go(hash) { // the view follows state; the URL hash is kept in step when the browser allows it
+  applyRoute(hash);
+  try { if (location.hash.replace(/^#/, '') !== hash) location.hash = hash; } catch (e) {}
+}
+function route() {
+  var h = location.hash.replace(/^#/, '');
+  if (h === lastHash) return;
+  if (h.indexOf('share=') === 0) {
+    var target = 'new';
+    if (REMOTE) toast('That link comes from the offline file and cannot be opened here.');
+    else try { var ev = mergeEvent(fromCode(h.slice(6))); save(); target = 'e=' + ev.id; toast('Imported “' + ev.name + '”.'); }
+    catch (e) { toast('That invite link could not be read.'); }
+    try { history.replaceState(null, '', '#' + target); } catch (e2) {}
+    h = target;
+  }
+  applyRoute(h);
+}
+function applyRoute(h) {
+  lastHash = h;
+  var id = h.indexOf('e=') === 0 ? h.slice(2) : null;
+  if (REMOTE && id && /^[a-z0-9]{4,24}$/.test(id)) loadRemote(id); else showRoute(id);
+}
+function showRoute(id) {
+  if (id && S.events.some(function (e) { return e.id === id; })) {
+    if (S.curId !== id) { S.curId = id; S.me = null; token = null; S.siErr = ''; S.siName = ''; S.siPw = ''; S.hover = null; }
+    S.view = 'event';
+  } else S.view = 'new';
+  render();
+}
+function createEvent() {
+  var d = S.draft, days = draftDays();
+  if (!days.length) S.error = d.kind === 'dates' ? 'Choose at least one date first.' : 'Choose at least one day of the week first.';
+  else if (d.mode === 'times' && d.end <= d.start) S.error = 'The latest time must be after the earliest time.';
+  else S.error = '';
+  if (S.error) { updateDraft(); return; }
+  var ev = { id: newId(), name: d.name.trim() || 'New event', kind: d.kind, mode: d.mode, days: days, start: d.start, end: d.end, tz: d.tz, created: Date.now(), people: [] };
+  var opened = function (e) {
+    S.draft = { name: '', kind: d.kind, mode: d.mode, days: {}, dow: {}, start: d.start, end: d.end, tz: d.tz };
+    S.viewTz = LOCAL_TZ;
+    go('e=' + e.id);
+  };
+  if (!REMOTE) { S.events.unshift(ev); save(); opened(ev); return; }
+  if (creating) return;
+  creating = true;
+  api('POST', 'events', ev).then(function (j) {
+    creating = false;
+    var made = cleanEvent(j.event);
+    if (!made) throw new Error('invalid');
+    adopt(made); opened(made);
+  }).catch(function () {
+    creating = false;
+    S.error = 'Could not create the event. Check that the server is still running, then try again.';
+    updateDraft();
+  });
+}
+function toggleSlots(keys) {
+  var ev = cur(), me = mePerson(ev);
+  if (!me) { needSignIn(); return; }
+  var all = keys.every(function (k) { return me.slots[k]; });
+  keys.forEach(function (k) { if (all) delete me.slots[k]; else me.slots[k] = 1; });
+  me.updated = Date.now();
+  saveMine(); paint();
+}
+function rectEach(c0, r0, c1, r1, fn) {
+  for (var r = Math.min(r0, r1); r <= Math.max(r0, r1); r++) for (var c = Math.min(c0, c1); c <= Math.max(c0, c1); c++) fn(c, r);
+}
+function dragTo(t) {
+  var d = drag;
+  d.last = t;
+  if (d.g === 'cal') {
+    var set = Object.assign({}, d.base), i1 = +t.dataset.i;
+    rectEach(d.i0 % 7, Math.floor(d.i0 / 7), i1 % 7, Math.floor(i1 / 7), function (c, r) { var k = calKeys[r * 7 + c]; if (d.adding) set[k] = 1; else delete set[k]; });
+    S.draft.days = set; S.error = '';
+    updateDraft();
+    return;
+  }
+  if (d.rect) { // rectangle between where the drag started and where it is now
+    var slots = Object.assign({}, d.base), L = layout(cur(), S.viewTz);
+    rectEach(d.c0, d.r0, +t.dataset.c, +t.dataset.r, function (c, r) { var k = L.cells[L.colKeys[c] + '@' + L.rowMins[r]]; if (!k) return; if (d.adding) slots[k] = 1; else delete slots[k]; });
+    d.me.slots = slots;
+  } else if (d.adding) d.me.slots[t.dataset.k] = 1; else delete d.me.slots[t.dataset.k];
+  d.me.updated = Date.now();
+  paint();
+}
+function endDrag() {
+  if (!drag) return;
+  var g = drag.g;
+  drag = null;
+  if (g === 'mine') saveMine();
+}
+
+app.addEventListener('pointerdown', function (e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  var t = e.target.closest('[data-g="cal"],[data-g="mine"]');
+  if (!t) return;
+  if (t.dataset.g === 'cal') {
+    var base = Object.assign({}, S.draft.days);
+    drag = { g: 'cal', adding: !base[t.dataset.k], i0: +t.dataset.i, base: base };
+  } else {
+    var me = mePerson(cur());
+    if (!me) { needSignIn(); return; }
+    drag = { g: 'mine', me: me, adding: !me.slots[t.dataset.k], rect: t.dataset.c !== undefined, c0: +t.dataset.c, r0: +t.dataset.r, base: Object.assign({}, me.slots) };
+  }
+  e.preventDefault();
+  dragTo(t);
+});
+window.addEventListener('pointermove', function (e) {
+  if (!drag) return;
+  if (e.pointerType === 'mouse' && e.buttons !== 1) { endDrag(); return; }
+  var el = document.elementFromPoint(e.clientX, e.clientY), t = el && el.closest ? el.closest('[data-g="' + drag.g + '"]') : null;
+  if (t && t !== drag.last) dragTo(t);
+});
+window.addEventListener('pointerup', endDrag);
+window.addEventListener('pointercancel', endDrag);
+
+app.addEventListener('pointerover', function (e) {
+  var c = e.target.closest('[data-g="group"]');
+  if (c) setHover(c); else if (S.hover && !e.target.closest('.group-board')) setHover(null);
+});
+app.addEventListener('focusin', function (e) { var c = e.target.closest('[data-g="group"]'); if (c) setHover(c); });
+
+app.addEventListener('click', function (e) {
+  var cell = e.target.closest('[data-g]');
+  if (cell) { // pointer presses are handled above; this is for the keyboard
+    var g = cell.dataset.g;
+    if (g === 'group') setHover(cell);
+    else if (e.detail === 0) {
+      if (g === 'cal') { var k = cell.dataset.k; if (S.draft.days[k]) delete S.draft.days[k]; else S.draft.days[k] = 1; S.error = ''; updateDraft(); }
+      else toggleSlots([cell.dataset.k]);
+    }
+    return;
+  }
+  var b = e.target.closest('[data-act]');
+  if (!b) return;
+  var a = b.dataset.act, d = S.draft, t;
+  if (a === 'new') go('new');
+  else if (a === 'open') { e.preventDefault(); go('e=' + b.dataset.id); }
+  else if (a === 'kind') { d.kind = b.dataset.v; S.error = ''; render(); }
+  else if (a === 'mode') { d.mode = b.dataset.v; S.error = ''; render(); }
+  else if (a === 'prev' || a === 'next') { t = new Date(Date.UTC(S.cal.y, S.cal.m + (a === 'prev' ? -1 : 1), 1)); S.cal = { y: t.getUTCFullYear(), m: t.getUTCMonth() }; render(); }
+  else if (a === 'today') { t = new Date(); S.cal = { y: t.getFullYear(), m: t.getMonth() }; render(); }
+  else if (a === 'clear') { if (d.kind === 'dates') d.days = {}; else d.dow = {}; S.error = ''; updateDraft(); }
+  else if (a === 'dow') { if (d.dow[b.dataset.v]) delete d.dow[b.dataset.v]; else d.dow[b.dataset.v] = 1; S.error = ''; updateDraft(); }
+  else if (a === 'create') createEvent();
+  else if (a === 'copy') copyLink();
+  else if (a === 'signout') { S.me = null; token = null; S.siErr = ''; render(); }
+  else if (a === 'daycol') { var L = layout(cur(), S.viewTz); toggleSlots(colSlots(L, L.colKeys[+b.dataset.c])); }
+  else if (a === 'del') {
+    var id = b.dataset.id, ev = null;
+    S.events.forEach(function (x) { if (x.id === id) ev = x; });
+    if (ev && window.confirm(REMOTE ? 'Remove “' + ev.name + '” from this browser’s list? The event and its responses stay on the server.'
+      : 'Delete “' + ev.name + '” and all of its responses from this browser? This cannot be undone.')) {
+      S.events = S.events.filter(function (x) { return x.id !== id; });
+      save();
+      if (S.curId === id) { S.curId = null; go('new'); } else render();
+    }
+  }
+});
+app.addEventListener('change', function (e) {
+  var f = e.target.dataset.field;
+  if (!f) return;
+  if (f === 'viewtz') { S.viewTz = e.target.value; S.hover = null; render(); return; }
+  if (f === 'start') S.draft.start = +e.target.value;
+  else if (f === 'end') S.draft.end = +e.target.value;
+  else if (f === 'tz') S.draft.tz = e.target.value;
+  S.error = '';
+  updateDraft();
+});
+app.addEventListener('input', function (e) { // remember typed text so a refresh of the view does not lose it
+  var t = e.target;
+  if (t.id === 'ev-name') S.draft.name = t.value;
+  else if (t.dataset.fid === 'si-name') S.siName = t.value;
+  else if (t.dataset.fid === 'si-pw') S.siPw = t.value;
+});
+app.addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.id === 'ev-name') createEvent(); });
+app.addEventListener('submit', function (e) {
+  e.preventDefault();
+  var f = e.target.dataset.form, el = e.target.elements;
+  if (f === 'signin') signIn(el.namedItem('name').value, el.namedItem('pw').value);
+  else if (f === 'import') importText(el.namedItem('code').value);
+});
+window.addEventListener('hashchange', route);
+document.addEventListener('visibilitychange', poll);
+
+if (/^https?:$/.test(location.protocol)) { // served over the web: check whether server.js is behind this page
+  api('GET', 'ping').then(function (j) { REMOTE = j.app === 'overlap'; TEMPORARY = REMOTE && j.durable === false; }, function () {}).then(function () { route(); setInterval(poll, 4000); });
+} else route();
+})();
+</script>
+</body>
+</html>

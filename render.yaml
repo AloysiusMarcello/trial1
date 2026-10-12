@@ -1,0 +1,20 @@
+# Render Blueprint for Overlap: a free web service running server.js, plus a free Postgres
+# database so events survive restarts (the free web service's own disk is wiped when it restarts).
+services:
+  - type: web
+    name: overlap
+    runtime: node
+    plan: free
+    branch: overlap
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/ping
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: overlap-db
+          property: connectionString
+
+databases:
+  - name: overlap-db
+    plan: free

@@ -1,0 +1,16 @@
+{
+  "name": "overlap",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Overlap: find a time that works for a group",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "^8.11.0"
+  }
+}

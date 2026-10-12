@@ -1,0 +1,10 @@
+# installed packages and answers saved by a local run
+node_modules/
+data/
+
+# private key made for the localhost.run tunnel: never publish
+tunnel_key
+tunnel_key.pub
+
+# design canvas source, not part of the hosted app
+canvas/
