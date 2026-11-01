@@ -1,5 +1,6 @@
-# Render Blueprint for Overlap: a free web service running server.js, plus a free Postgres
-# database so events survive restarts (the free web service's own disk is wiped when it restarts).
+# Render Blueprint for Overlap: a free web service running server.js. Events are kept in a free Neon Postgres
+# database whose connection string is entered as DATABASE_URL in the dashboard, because Render deletes its own
+# free databases 30 days after creation (the free web service's own disk is wiped whenever it restarts).
 services:
   - type: web
     name: overlap
@@ -11,6 +12,10 @@ services:
     healthCheckPath: /api/ping
     envVars:
       - key: DATABASE_URL
+        sync: false
+      # one-time move from the old Render database; remove this and the databases section once the log
+      # says "Copied ... events"
+      - key: COPY_FROM_DATABASE_URL
         fromDatabase:
           name: overlap-db
           property: connectionString
