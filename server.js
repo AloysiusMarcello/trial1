@@ -74,23 +74,6 @@ function flush() { // one write at a time, so an older copy can never land after
   return writes;
 }
 function persist(ev) { unsaved.add(ev.id); if (!saveTimer) saveTimer = setTimeout(flush, 150); }
-// One-time move to a new database: with COPY_FROM_DATABASE_URL set, an empty database is filled with every
-// event from the old one on start. A database that already has events is left alone, so restarts are safe.
-async function copyFrom(url) {
-  if (Object.keys(events).length) { console.log('Not copying from COPY_FROM_DATABASE_URL: this database already has events.'); return; }
-  const { Pool } = require('pg');
-  let rows = null, lastError;
-  for (const ssl of [{ rejectUnauthorized: false }, false]) {
-    const p = new Pool({ connectionString: url, ssl, max: 1 });
-    try { rows = (await p.query('SELECT id, data FROM overlap_events')).rows; } catch (e) { lastError = e; }
-    await p.end().catch(() => {});
-    if (rows) break;
-  }
-  if (!rows) throw lastError;
-  for (const row of rows) { events[row.id] = row.data; unsaved.add(row.id); }
-  await flush();
-  console.log('Copied ' + rows.length + ' events from COPY_FROM_DATABASE_URL' + (unsaved.size ? '; ' + unsaved.size + ' still saving.' : '.'));
-}
 
 // ---------- model ----------
 function validTz(tz) {
@@ -266,10 +249,6 @@ async function start() {
     catch (e) { // a connection timeout arrives as an AggregateError with no message, only a code
       console.error('Could not use the database (' + String(e.message || e.code || e).split('\n')[0] + '). Using the data file instead.');
     }
-  }
-  if (pool && process.env.COPY_FROM_DATABASE_URL) {
-    try { await copyFrom(process.env.COPY_FROM_DATABASE_URL); }
-    catch (e) { console.error('Could not copy from COPY_FROM_DATABASE_URL (' + String(e.message || e.code || e).split('\n')[0] + ').'); }
   }
   if (!pool) loadFile();
   server.listen(PORT, HOST, () => {
